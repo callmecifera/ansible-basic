@@ -1,2 +1,5 @@
 ssh_port: 2222
-trusted_subnet: "172.16.218.0/24"
+network: "172.16.218.0"
+subnet_mask: "255.255.255.0"
+domain_name: "latihan.home.arpa"
+ga

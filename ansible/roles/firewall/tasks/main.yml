@@ -14,7 +14,6 @@
 ###########################################
 # Enabling Kernel IPv4 Forwarding feature #
 ###########################################
-
 - name: Enable IPv4 Forwarding
   sysctl:
     name: net.ipv4.ip_forward
@@ -27,24 +26,110 @@
   # Flush IPTABLES Rules #
   ########################
 
-  tasks:
-    - name: Flush Input Chain
-      iptables:
-        chain: INPUT
-        flush: yes
-    - name: Allow SSH
-      iptables:
-        chain: INPUT
-        protocol: tcp
-        source: "{{ trusted_subnet }}"
-        destination_port: "{{ ssh_port }}"
-        jump: ACCEPT
-    - name: Flush Forward Chain
-      iptables:
-        chain: FORWARD
-        flush: yes
-    - name: Flush NAT POSTROUTING
-      iptables:
-        table: nat
-        chain: POSTROUTING
-        flush: yes
+- name: Flush Input Chain
+  iptables:
+    chain: INPUT
+    flush: yes
+- name: Allow SSH
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    source: "{{ trusted_subnet }}/24"
+    destination_port: "{{ ssh_port }}"
+    jump: ACCEPT
+- name: Flush Forward Chain
+  iptables:
+    chain: FORWARD
+    flush: yes
+- name: Flush NAT POSTROUTING
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    flush: yes
+
+############
+# Loopback #
+# ##########
+
+- name: Allow Loopback
+  iptables:
+    chain: INPUT
+    in_interface: lo
+    jump: ACCEPT
+
+###################################
+# Established/Related Connections #
+###################################
+
+- name: Allow Established/Related Connections
+  iptables:
+    chain: INPUT
+    ctstate:
+      - ESTABLISHED
+      - RELATED
+    jump: ACCEPT
+
+###################
+# Allow ICMP echo #
+###################
+
+- name: Allow ICMP echo
+  iptables:
+    chain: INPUT
+    protocol: icmp
+    icmp_type: echo-request
+    jump: ACCEPT
+
+##################
+# FIrewall Rules #
+# ################
+
+- name: Allow SSH
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ ssh_port }}"
+    source: "{{ trusted_subnet }}/24"
+    jump: ACCEPT
+
+- name: Allow DNS UDP
+  iptables:
+    chain: INPUT
+    protocol: udp
+    destination_port: "53"
+    jump: ACCEPT
+
+- name: Allow DNS TCP
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "53"
+    jump: ACCEPT
+
+- name: DHCP DORA
+  iptables:
+    chain: INPUT
+    protocol: udp
+    destination_port: "67:68"
+    jump: ACCEPT
+
+- name: Web Service HTTP and HTTPS
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: { { item } }
+    jump: ACCEPT
+  loop:
+    - "80"
+    - "443"
+
+- name: Mail Ports
+  iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: { { item } }
+    jump: ACCEPT
+  loop:
+    - "25"
+    - "587"
+    - "465"
