@@ -1,0 +1,40 @@
+---
+# Network
+domain_name: "skill.net"
+network: "172.16.218.0"
+subnet_mask: "255.255.255.0"
+gateway: "172.16.218.1"
+server_ip: "172.16.218.x"      # change to your actual IP
+broadcast: "172.16.218.255"
+
+# SSH
+ssh_port: 2222
+
+# DNS
+dns_forwarder: "8.8.8.8"
+
+# DHCP
+dhcp_range_start: "172.16.218.100"
+dhcp_range_end:   "172.16.218.200"
+dhcp_lease_time:  "86400"
+
+# Web
+web_root: "/var/www/html"
+
+# Mail
+mail_domain: "skill.net"
+
+# LDAP
+ldap_base_dn: "dc=skill,dc=net"
+ldap_admin_dn: "cn=admin,dc=skill,dc=net"
+ldap_admin_pass: "Admin1234"
+
+# NFS
+nfs_export_path: "/srv/nfs"
+nfs_allowed_network: "172.16.218.0/24"
+
+# VPN
+vpn_port: 1194
+vpn_proto: "udp"
+vpn_network: "10.8.0.0"
+vpn_subnet:  "255.255.255.0"

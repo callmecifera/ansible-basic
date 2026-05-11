@@ -1,135 +1,174 @@
-###########################
-# Install Necessary tools #
-###########################
-
-- name: Install tool
+---
+- name: Install firewall tools
   apt:
-    name:
-      - iptables
-      - iptables-persistent
-      - netfilter-persistent
-    state: present
-    update_cache: yes
+    name: "{{ firewall_packages }}"
+    state: "{{ firewall_package_state }}"
+    update_cache: "{{ firewall_update_cache }}"
 
-###########################################
-# Enabling Kernel IPv4 Forwarding feature #
-###########################################
-- name: Enable IPv4 Forwarding
+- name: Enable IPv4 forwarding
   sysctl:
-    name: net.ipv4.ip_forward
-    value: "1"
-    sysctl_set: yes
-    state: present
-    reload: yes
+    name: "{{ firewall_ip_forward_sysctl }}"
+    value: "{{ firewall_ip_forward_value }}"
+    sysctl_set: "{{ firewall_sysctl_set }}"
+    state: "{{ firewall_sysctl_state }}"
+    reload: "{{ firewall_sysctl_reload }}"
 
-  ########################
-  # Flush IPTABLES Rules #
-  ########################
+- name: Flush filter chains
+  iptables:
+    chain: "{{ item }}"
+    flush: "{{ firewall_flush }}"
+  loop: "{{ firewall_filter_chains }}"
 
-- name: Flush Input Chain
+- name: Flush NAT chains
   iptables:
-    chain: INPUT
-    flush: yes
-- name: Allow SSH
+    table: "{{ firewall_nat_table }}"
+    chain: "{{ item }}"
+    flush: "{{ firewall_flush }}"
+  loop: "{{ firewall_nat_chains }}"
+
+- name: Allow loopback input
   iptables:
-    chain: INPUT
-    protocol: tcp
-    source: "{{ trusted_subnet }}/24"
+    chain: "{{ firewall_input_chain }}"
+    in_interface: "{{ firewall_loopback_interface }}"
+    jump: "{{ firewall_accept_jump }}"
+
+- name: Allow established and related input
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    ctstate: "{{ firewall_established_states }}"
+    jump: "{{ firewall_accept_jump }}"
+
+- name: Allow established and related forwarding
+  iptables:
+    chain: "{{ firewall_forward_chain }}"
+    ctstate: "{{ firewall_established_states }}"
+    jump: "{{ firewall_accept_jump }}"
+
+- name: Allow ICMP echo request
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_icmp_protocol }}"
+    icmp_type: "{{ firewall_icmp_echo_type }}"
+    jump: "{{ firewall_accept_jump }}"
+
+- name: Allow SSH from trusted subnet
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_tcp_protocol }}"
+    source: "{{ firewall_trusted_cidr }}"
     destination_port: "{{ ssh_port }}"
-    jump: ACCEPT
-- name: Flush Forward Chain
-  iptables:
-    chain: FORWARD
-    flush: yes
-- name: Flush NAT POSTROUTING
-  iptables:
-    table: nat
-    chain: POSTROUTING
-    flush: yes
-
-############
-# Loopback #
-# ##########
-
-- name: Allow Loopback
-  iptables:
-    chain: INPUT
-    in_interface: lo
-    jump: ACCEPT
-
-###################################
-# Established/Related Connections #
-###################################
-
-- name: Allow Established/Related Connections
-  iptables:
-    chain: INPUT
-    ctstate:
-      - ESTABLISHED
-      - RELATED
-    jump: ACCEPT
-
-###################
-# Allow ICMP echo #
-###################
-
-- name: Allow ICMP echo
-  iptables:
-    chain: INPUT
-    protocol: icmp
-    icmp_type: echo-request
-    jump: ACCEPT
-
-##################
-# FIrewall Rules #
-# ################
-
-- name: Allow SSH
-  iptables:
-    chain: INPUT
-    protocol: tcp
-    destination_port: "{{ ssh_port }}"
-    source: "{{ trusted_subnet }}/24"
-    jump: ACCEPT
+    jump: "{{ firewall_accept_jump }}"
 
 - name: Allow DNS UDP
   iptables:
-    chain: INPUT
-    protocol: udp
-    destination_port: "53"
-    jump: ACCEPT
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_udp_protocol }}"
+    destination_port: "{{ firewall_dns_port }}"
+    jump: "{{ firewall_accept_jump }}"
 
 - name: Allow DNS TCP
   iptables:
-    chain: INPUT
-    protocol: tcp
-    destination_port: "53"
-    jump: ACCEPT
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_tcp_protocol }}"
+    destination_port: "{{ firewall_dns_port }}"
+    jump: "{{ firewall_accept_jump }}"
 
-- name: DHCP DORA
+- name: Allow DHCP server traffic from internal interface
   iptables:
-    chain: INPUT
-    protocol: udp
-    destination_port: "67:68"
-    jump: ACCEPT
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_udp_protocol }}"
+    in_interface: "{{ iface_internal }}"
+    destination_port: "{{ firewall_dhcp_server_port }}"
+    jump: "{{ firewall_accept_jump }}"
 
-- name: Web Service HTTP and HTTPS
+- name: Allow web service ports
   iptables:
-    chain: INPUT
-    protocol: tcp
-    destination_port: { { item } }
-    jump: ACCEPT
-  loop:
-    - "80"
-    - "443"
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_tcp_protocol }}"
+    destination_port: "{{ item }}"
+    jump: "{{ firewall_accept_jump }}"
+  loop: "{{ firewall_web_ports }}"
 
-- name: Mail Ports
+- name: Allow mail service ports
   iptables:
-    chain: INPUT
-    protocol: tcp
-    destination_port: { { item } }
-    jump: ACCEPT
-  loop:
-    - "25"
-    - "587"
-    - "465"
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_tcp_protocol }}"
+    destination_port: "{{ item }}"
+    jump: "{{ firewall_accept_jump }}"
+  loop: "{{ firewall_mail_ports }}"
+
+- name: Allow LDAP service ports from trusted subnet
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_tcp_protocol }}"
+    source: "{{ firewall_trusted_cidr }}"
+    destination_port: "{{ item }}"
+    jump: "{{ firewall_accept_jump }}"
+  loop: "{{ firewall_ldap_ports }}"
+
+- name: Allow NFS TCP from allowed network
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_tcp_protocol }}"
+    source: "{{ nfs_allowed_network }}"
+    destination_port: "{{ item }}"
+    jump: "{{ firewall_accept_jump }}"
+  loop: "{{ firewall_nfs_ports }}"
+
+- name: Allow NFS UDP from allowed network
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ firewall_udp_protocol }}"
+    source: "{{ nfs_allowed_network }}"
+    destination_port: "{{ item }}"
+    jump: "{{ firewall_accept_jump }}"
+  loop: "{{ firewall_nfs_ports }}"
+
+- name: Allow OpenVPN
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    protocol: "{{ vpn_proto }}"
+    destination_port: "{{ vpn_port }}"
+    jump: "{{ firewall_accept_jump }}"
+
+- name: Allow internal network to forward out
+  iptables:
+    chain: "{{ firewall_forward_chain }}"
+    in_interface: "{{ iface_internal }}"
+    out_interface: "{{ iface_external }}"
+    source: "{{ firewall_trusted_cidr }}"
+    jump: "{{ firewall_accept_jump }}"
+
+- name: Masquerade internal network on external interface
+  iptables:
+    table: "{{ firewall_nat_table }}"
+    chain: "{{ firewall_postrouting_chain }}"
+    out_interface: "{{ iface_external }}"
+    source: "{{ firewall_trusted_cidr }}"
+    jump: "{{ firewall_masquerade_jump }}"
+
+- name: Log dropped input packets
+  iptables:
+    chain: "{{ firewall_input_chain }}"
+    limit: "{{ firewall_log_limit }}"
+    log_prefix: "{{ firewall_input_log_prefix }}"
+    log_level: "{{ firewall_log_level }}"
+    jump: "{{ firewall_drop_log_jump }}"
+
+- name: Log dropped forwarded packets
+  iptables:
+    chain: "{{ firewall_forward_chain }}"
+    limit: "{{ firewall_log_limit }}"
+    log_prefix: "{{ firewall_forward_log_prefix }}"
+    log_level: "{{ firewall_log_level }}"
+    jump: "{{ firewall_drop_log_jump }}"
+
+- name: Set filter chain policies
+  iptables:
+    chain: "{{ item.chain }}"
+    policy: "{{ item.policy }}"
+  loop: "{{ firewall_chain_policies }}"
+
+- name: Save iptables rules
+  command: "{{ firewall_save_command }}"
+  changed_when: "{{ firewall_save_changed_when }}"
