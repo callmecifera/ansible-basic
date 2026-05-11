@@ -1,0 +1,50 @@
+---
+- name: Install DNS server packages
+  apt:
+    name: "{{ dns_packages }}"
+    state: "{{ dns_package_state }}"
+    update_cache: "{{ dns_update_cache }}"
+
+- name: Configure BIND9 named.conf.options
+  template:
+    src: named.conf.options.j2
+    dest: /etc/bind/named.conf.options
+    owner: root
+    group: bind
+    mode: "0640"
+  notify: Restart DNS Service
+
+- name: Configure BIND9 named.conf.local
+  template:
+    src: named.conf.local.j2
+    dest: /etc/bind/named.conf.local
+    owner: root
+    group: bind
+    mode: "0640"
+  notify: Restart DNS Service
+
+- name: Create DNS zone files directory
+  file:
+    path: "{{ zone_files_directory }}"
+    state: directory
+    owner: "{{ zone_file_owner }}"
+    group: "{{ zone_file_group }}"
+    mode: "{{ zone_file_mode }}"
+
+- name: Configure BIND9 db.{{ domain_name }}
+  template:
+    src: db.zone-forward.j2
+    dest: /etc/bind/zones/db.{{ domain_name }}
+    owner: root
+    group: bind
+    mode: "0640"
+  notify: Restart DNS Service
+
+- name: Configure BIND9 db.{{ flipped_ip }}.in-addr.arpa
+  template:
+    src: db.zone-reverse.j2
+    dest: /etc/bind/zones/db.{{ flipped_ip }}.in-addr.arpa
+    owner: root
+    group: bind
+    mode: "0640"
+  notify: Restart DNS Service

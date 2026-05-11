@@ -1,0 +1,102 @@
+{#
+  BIND 9 named.conf.options template for Debian 13 (Trixie)
+  References best practices: recursion control, DNSSEC, rate-limiting,
+  version hiding, ACLs, and more.
+#}
+
+// {{ ansible_managed }}
+options {
+    directory "{{ bind_directory | default('/var/cache/bind') }}";
+
+{% if bind_forwarders is defined and bind_forwarders %}
+    // Upstream forwarders
+    forwarders {
+{% for fwd in bind_forwarders %}
+        {{ fwd }};
+{% endfor %}
+    };
+{% if bind_forward_only | default(false) %}
+    forward only;
+{% endif %}
+{% endif %}
+
+    // Listen on specific interfaces
+{% if bind_listen_ipv4 is defined and bind_listen_ipv4 %}
+    listen-on port {{ bind_listen_port | default(53) }} { {{ bind_listen_ipv4 | join('; ') }}; };
+{% else %}
+    listen-on port {{ bind_listen_port | default(53) }} { any; };
+{% endif %}
+{% if bind_listen_ipv6 is defined and bind_listen_ipv6 %}
+    listen-on-v6 port {{ bind_listen_port | default(53) }} { {{ bind_listen_ipv6 | join('; ') }}; };
+{% else %}
+    listen-on-v6 port {{ bind_listen_port | default(53) }} { any; };
+{% endif %}
+
+    // Query and recursion restrictions
+{% if bind_recursion | default(true) %}
+    recursion yes;
+{% else %}
+    recursion no;
+{% endif %}
+    allow-query { {{ bind_allow_query | default(['trusted']) | join('; ') }}; };
+{% if bind_recursion | default(true) %}
+    allow-recursion { {{ bind_allow_recursion | default(['trusted']) | join('; ') }}; };
+    allow-query-cache { {{ bind_allow_cache | default(['trusted']) | join('; ') }}; };
+{% endif %}
+
+    // Zone transfer restrictions (global deny-all; override in zone blocks)
+    allow-transfer { {{ bind_allow_transfer | default(['none']) | join('; ') }}; };
+
+    // Rate limiting & performance
+{% if bind_recursive_clients is defined %}
+    recursive-clients {{ bind_recursive_clients }};
+{% endif %}
+{% if bind_tcp_clients is defined %}
+    tcp-clients {{ bind_tcp_clients }};
+{% endif %}
+{% if bind_rate_limit is defined and bind_rate_limit %}
+    rate-limit {
+{% if bind_rate_limit.responses_per_second is defined %}
+        responses-per-second {{ bind_rate_limit.responses_per_second }};
+{% endif %}
+{% if bind_rate_limit.nxdomains_per_second is defined %}
+        nxdomains-per-second {{ bind_rate_limit.nxdomains_per_second }};
+{% endif %}
+{% if bind_rate_limit.referrals_per_second is defined %}
+        referrals-per-second {{ bind_rate_limit.referrals_per_second }};
+{% endif %}
+{% if bind_rate_limit.errors_per_second is defined %}
+        errors-per-second {{ bind_rate_limit.errors_per_second }};
+{% endif %}
+    };
+{% endif %}
+
+    // Outgoing zone transfer limits
+{% if bind_transfers_out is defined %}
+    transfers-out {{ bind_transfers_out }};
+{% endif %}
+{% if bind_transfers_in is defined %}
+    transfers-in {{ bind_transfers_in }};
+{% endif %}
+
+    // DNSSEC validation (auto means use system trust anchor)
+    dnssec-validation {{ bind_dnssec_validation | default('auto') }};
+{% if bind_dnssec_validation == 'yes' and bind_keys_file is defined %}
+    bindkeys-file "{{ bind_keys_file }}";
+{% endif %}
+
+    // Hide BIND version
+    version "{{ bind_version_string | default('Not disclosed') }}";
+
+    // Minimal responses to limit amplification
+    minimal-responses {{ bind_minimal_responses | default('yes') }};
+};
+
+// ACL definitions
+{% for acl_name, acl_values in bind_acls.items() %}
+acl "{{ acl_name }}" {
+{% for entry in acl_values %}
+    {{ entry }};
+{% endfor %}
+};
+{% endfor %}

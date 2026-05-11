@@ -4,15 +4,70 @@ domain_name: "latihan.home.arpa"
 network: "172.16.218.0"
 subnet_mask: "255.255.255.0"
 gateway: "172.16.218.1"
-server_ip: "172.16.218.1" # change to your actual IP
+server_ip: "172.16.218.1"
 broadcast: "172.16.218.255"
 trusted_subnet: "172.16.218.0"
+flipped_ip: "218.16.172"
+lov4: "127.0.0.1"
+lov6: "::1"
 
 # SSH
 ssh_port: 2222
 
 # DNS
-dns_forwarder: "8.8.8.8"
+dns_service_name: "bind9"
+dns_packages:
+  - { { dns_service_name } }
+  - bind9utils
+  - dnsutils
+dns_package_state: present
+dns_update_cache: yes
+bind_directory: "/var/cache/bind"
+bind_forwarders:
+  - 1.1.1.1
+  - 9.9.9.9
+bind_forward_only: false
+bind_listen_ipv4:
+  - { { lov4 } }
+  - { { server_ip } }
+bind_listen_ipv6:
+  - { { lov6 } }
+bind_listen_port: 53
+bind_recursion: true
+bind_allow_query:
+  - trusted
+bind_allow_recursion:
+  - trusted
+bind_allow_cache:
+  - trusted
+bind_allow_transfer:
+  - none
+bind_recursive_clients: 1500
+bind_tcp_clients: 250
+bind_rate_limit:
+  responses_per_second: 10
+  nxdomains_per_second: 5
+bind_transfers_out: 15
+bind_transfers_in: 15
+bind_dnssec_validation: "auto"
+bind_version_string: "Not disclosed"
+bind_minimal_responses: "yes"
+bind_acls:
+  trusted:
+    - "{{ lov4 }}/8"
+    - "{{ server_ip }}/24"
+
+# Zone File Configuration
+timeto_live: 3600
+serial_number: "{{ ansible_date_time.epoch }}"
+refresh_time: 3600
+retry_time: 600
+expire_time: 86400
+negative_cache_time: 300
+zone_files_directory: "/etc/bind/zones"
+zone_file_owner: root
+zone_file_group: bind
+zone_file_mode: "0640"
 
 # DHCP
 dhcp_range_start: "172.16.218.100"

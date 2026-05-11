@@ -1,0 +1,13 @@
+$TTL    {{ time_to_live }}
+@   IN  SOA ns1.{{ domain_name }}. admin.{{ domain_name }}. (
+            {{ serial_number }}         ; Serial
+            {{ refresh_time }}    ; Refresh
+            {{ retry_time }}     ; Retry
+            {{ expire_time }}   ; Expire
+            {{ negative_cache_time }} )  ; Negative Cache TTL
+
+@       IN  NS  ns1.{{ domain_name }}.
+ns1     IN  A   {{ server_ip }}
+@       IN  A   {{ server_ip }}
+www     IN  A   {{ server_ip }}
+mail    IN  A   {{ server_ip }}
