@@ -1,0 +1,2 @@
+ssh_port: 2222
+trusted_subnet: "172.16.218.0/24"

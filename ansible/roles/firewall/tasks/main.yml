@@ -1,0 +1,50 @@
+###########################
+# Install Necessary tools #
+###########################
+
+- name: Install tool
+  apt:
+    name:
+      - iptables
+      - iptables-persistent
+      - netfilter-persistent
+    state: present
+    update_cache: yes
+
+###########################################
+# Enabling Kernel IPv4 Forwarding feature #
+###########################################
+
+- name: Enable IPv4 Forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+  ########################
+  # Flush IPTABLES Rules #
+  ########################
+
+  tasks:
+    - name: Flush Input Chain
+      iptables:
+        chain: INPUT
+        flush: yes
+    - name: Allow SSH
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        source: "{{ trusted_subnet }}"
+        destination_port: "{{ ssh_port }}"
+        jump: ACCEPT
+    - name: Flush Forward Chain
+      iptables:
+        chain: FORWARD
+        flush: yes
+    - name: Flush NAT POSTROUTING
+      iptables:
+        table: nat
+        chain: POSTROUTING
+        flush: yes
