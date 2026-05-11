@@ -171,4 +171,4 @@
 
 - name: Save iptables rules
   command: "{{ firewall_save_command }}"
-  changed_when: "{{ firewall_save_changed_when }}"
+  changed_when: false

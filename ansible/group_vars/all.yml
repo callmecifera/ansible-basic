@@ -17,7 +17,7 @@ ssh_port: 2222
 # DNS
 dns_service_name: "bind9"
 dns_packages:
-  - { { dns_service_name } }
+  - "{{ dns_service_name }}"
   - bind9utils
   - dnsutils
 dns_package_state: present
@@ -28,10 +28,10 @@ bind_forwarders:
   - 9.9.9.9
 bind_forward_only: false
 bind_listen_ipv4:
-  - { { lov4 } }
-  - { { server_ip } }
+  - "{{ lov4 }}"
+  - "{{ server_ip }}"
 bind_listen_ipv6:
-  - { { lov6 } }
+  - "{{ lov6 }}"
 bind_listen_port: 53
 bind_recursion: true
 bind_allow_query:
@@ -167,4 +167,3 @@ firewall_input_log_prefix: "iptables-input-drop: "
 firewall_forward_log_prefix: "iptables-forward-drop: "
 firewall_log_level: "4"
 firewall_save_command: "netfilter-persistent save"
-firewall_save_changed_when: false

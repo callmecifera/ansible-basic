@@ -5,5 +5,5 @@ zone "{{ domain_name }}" {
 
 zone "{{ flipped_ip }}.in-addr.arpa" {
     type master;
-    file "/etc/bind/zones/db.{{ flipped_ip }}";
+    file "/etc/bind/zones/db.{{ flipped_ip }}.in-addr.arpa";
 };

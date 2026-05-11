@@ -1,5 +1,5 @@
 ---
 - name: Restart DNS Service
   service:
-    name: { { dns_service_name } }
+    name: "{{ dns_service_name }}"
     state: restarted
