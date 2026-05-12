@@ -6,6 +6,15 @@
     update_cache: yes
   tags: dhcp
 
+- name: Ensure Kea configuration directory is readable
+  file:
+    path: "{{ dhcp_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "{{ dhcp_config_dir_mode }}"
+  tags: dhcp
+
 - name: Configure Kea DHCPv4 server
   template:
     src: kea-dhcp4.conf.j2
@@ -13,8 +22,12 @@
     owner: root
     group: root
     mode: "0644"
-    validate: "kea-dhcp4 -t %s"
   notify: Restart DHCP Service
+  tags: dhcp
+
+- name: Validate Kea DHCPv4 configuration
+  command: kea-dhcp4 -t "{{ dhcp_config_path }}"
+  changed_when: false
   tags: dhcp
 
 - name: Enable and start DHCP service
