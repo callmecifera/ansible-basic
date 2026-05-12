@@ -39,7 +39,7 @@ bind_listen_ipv6:
 bind_listen_port: 53
 bind_recursion: true
 bind_allow_query:
-  - trusted
+  - any
 bind_allow_recursion:
   - trusted
 bind_allow_cache:
@@ -58,17 +58,18 @@ bind_version_string: "Not disclosed"
 bind_minimal_responses: "yes"
 bind_acls:
   trusted:
-    - "{{ lov4 }}/8"
-    - "{{ server_ip }}/24"
+    - "127.0.0.0/8"
+    - "{{ trusted_subnet }}/24"
 
 # Zone File Configuration
 timeto_live: 3600
-serial_number: "{{ ansible_date_time.epoch }}"
+serial_number: "{{ ansible_facts['date_time']['epoch'] }}"
 refresh_time: 3600
 retry_time: 600
 expire_time: 86400
 negative_cache_time: 300
 zone_files_directory: "/etc/bind/zones"
+zone_directory_mode: "0750"
 zone_file_owner: root
 zone_file_group: bind
 zone_file_mode: "0640"
@@ -76,7 +77,6 @@ zone_file_mode: "0640"
 # DHCP
 dhcp_server_packages:
   - kea-dhcp4-server
-  - kea-doc
 dhcp_service_name: "kea-dhcp4-server"
 dhcp_config_path: "/etc/kea/kea-dhcp4.conf"
 dhcp_subnet_id: 1

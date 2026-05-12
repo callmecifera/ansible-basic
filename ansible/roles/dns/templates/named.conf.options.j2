@@ -5,6 +5,16 @@
 #}
 
 // {{ ansible_managed }}
+{% if bind_acls is defined and bind_acls %}
+{% for acl_name, acl_values in bind_acls.items() %}
+acl "{{ acl_name }}" {
+{% for entry in acl_values %}
+    {{ entry }};
+{% endfor %}
+};
+{% endfor %}
+
+{% endif %}
 options {
     directory "{{ bind_directory | default('/var/cache/bind') }}";
 
@@ -91,12 +101,3 @@ options {
     // Minimal responses to limit amplification
     minimal-responses {{ bind_minimal_responses | default('yes') }};
 };
-
-// ACL definitions
-{% for acl_name, acl_values in bind_acls.items() %}
-acl "{{ acl_name }}" {
-{% for entry in acl_values %}
-    {{ entry }};
-{% endfor %}
-};
-{% endfor %}

@@ -4,6 +4,7 @@
     name: "{{ dns_packages }}"
     state: "{{ dns_package_state }}"
     update_cache: "{{ dns_update_cache }}"
+  tags: dns
 
 - name: Configure BIND9 named.conf.options
   template:
@@ -13,6 +14,7 @@
     group: bind
     mode: "0640"
   notify: Restart DNS Service
+  tags: dns
 
 - name: Configure BIND9 named.conf.local
   template:
@@ -22,6 +24,7 @@
     group: bind
     mode: "0640"
   notify: Restart DNS Service
+  tags: dns
 
 - name: Create DNS zone files directory
   file:
@@ -29,7 +32,8 @@
     state: directory
     owner: "{{ zone_file_owner }}"
     group: "{{ zone_file_group }}"
-    mode: "{{ zone_file_mode }}"
+    mode: "{{ zone_directory_mode }}"
+  tags: dns
 
 - name: Configure BIND9 db.{{ domain_name }}
   template:
@@ -39,6 +43,7 @@
     group: bind
     mode: "0640"
   notify: Restart DNS Service
+  tags: dns
 
 - name: Configure BIND9 db.{{ flipped_ip }}.in-addr.arpa
   template:
@@ -48,3 +53,35 @@
     group: bind
     mode: "0640"
   notify: Restart DNS Service
+  tags: dns
+
+- name: Validate BIND9 configuration
+  command: named-checkconf
+  changed_when: false
+  tags: dns
+
+- name: Validate forward DNS zone
+  command:
+    argv:
+      - runuser
+      - -u
+      - bind
+      - --
+      - named-checkzone
+      - "{{ domain_name }}"
+      - "/etc/bind/zones/db.{{ domain_name }}"
+  changed_when: false
+  tags: dns
+
+- name: Validate reverse DNS zone
+  command:
+    argv:
+      - runuser
+      - -u
+      - bind
+      - --
+      - named-checkzone
+      - "{{ flipped_ip }}.in-addr.arpa"
+      - "/etc/bind/zones/db.{{ flipped_ip }}.in-addr.arpa"
+  changed_when: false
+  tags: dns
