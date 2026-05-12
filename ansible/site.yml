@@ -1,0 +1,15 @@
+---
+- name: Configure LKS server
+  hosts: lks
+  become: true
+  gather_facts: true
+
+  roles:
+    - firewall
+    - dns
+    - dhcp
+    - web
+    - ldap
+    - nfs
+    - mail
+    - vpn

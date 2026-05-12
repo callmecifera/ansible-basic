@@ -1,0 +1,65 @@
+{
+  "Dhcp4": {
+    "interfaces-config": {
+      "interfaces": [
+        "{{ iface_internal }}"
+      ],
+      "dhcp-socket-type": "raw"
+    },
+    "control-socket": {
+      "socket-type": "unix",
+      "socket-name": "/run/kea/kea4-ctrl-socket"
+    },
+    "lease-database": {
+      "type": "memfile",
+      "persist": true,
+      "name": "/var/lib/kea/kea-leases4.csv",
+      "lfc-interval": 3600
+    },
+    "renew-timer": {{ dhcp_renew_timer }},
+    "rebind-timer": {{ dhcp_rebind_timer }},
+    "valid-lifetime": {{ dhcp_valid_lifetime }},
+    "option-data": [
+      {
+        "name": "domain-name-servers",
+        "data": "{{ dhcp_dns_servers | join(', ') }}"
+      },
+      {
+        "name": "domain-name",
+        "data": "{{ domain_name }}"
+      }
+    ],
+    "subnet4": [
+      {
+        "id": {{ dhcp_subnet_id }},
+        "subnet": "{{ network }}/24",
+        "pools": [
+          {
+            "pool": "{{ dhcp_range_start }} - {{ dhcp_range_end }}"
+          }
+        ],
+        "option-data": [
+          {
+            "name": "routers",
+            "data": "{{ gateway }}"
+          },
+          {
+            "name": "broadcast-address",
+            "data": "{{ broadcast }}"
+          }
+        ]
+      }
+    ],
+    "loggers": [
+      {
+        "name": "kea-dhcp4",
+        "output_options": [
+          {
+            "output": "/var/log/kea-dhcp4.log"
+          }
+        ],
+        "severity": "INFO"
+      }
+    ]
+  }
+}

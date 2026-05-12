@@ -1,0 +1,5 @@
+---
+- name: Restart DHCP Service
+  service:
+    name: "{{ dhcp_service_name }}"
+    state: restarted
