@@ -1,33 +1,113 @@
 ---
-# Network
-domain_name: "skill.net"
+# System Identity
+domain_name: "latihan.home.arpa"
 network: "172.16.218.0"
 subnet_mask: "255.255.255.0"
 gateway: "172.16.218.1"
-server_ip: "172.16.218.x"      # change to your actual IP
+server_ip: "172.16.218.1"
 broadcast: "172.16.218.255"
+trusted_subnet: "172.16.218.0"
+flipped_ip: "218.16.172"
+lov4: "127.0.0.1"
+lov6: "::1"
+ansible_host: "{{ server_ip }}"
+ansible_user: "CHANGE_ME"
+superuser: true
+python_interpreter: /usr/bin/python3
 
 # SSH
 ssh_port: 2222
 
 # DNS
-dns_forwarder: "8.8.8.8"
+dns_service_name: "bind9"
+dns_packages:
+  - "{{ dns_service_name }}"
+  - bind9utils
+  - dnsutils
+dns_package_state: present
+dns_update_cache: yes
+bind_directory: "/var/cache/bind"
+bind_forwarders:
+  - 1.1.1.1
+  - 8.8.8.8
+bind_forward_only: false
+bind_listen_ipv4:
+  - "{{ lov4 }}"
+  - "{{ server_ip }}"
+bind_listen_ipv6:
+  - "{{ lov6 }}"
+bind_listen_port: 53
+bind_recursion: true
+bind_allow_query:
+  - any
+bind_allow_recursion:
+  - trusted
+bind_allow_cache:
+  - trusted
+bind_allow_transfer:
+  - none
+bind_recursive_clients: 1500
+bind_tcp_clients: 250
+bind_rate_limit:
+  responses_per_second: 10
+  nxdomains_per_second: 5
+bind_transfers_out: 15
+bind_transfers_in: 15
+bind_dnssec_validation: "auto"
+bind_version_string: "Not disclosed"
+bind_minimal_responses: "yes"
+bind_acls:
+  trusted:
+    - "127.0.0.0/8"
+    - "{{ trusted_subnet }}/24"
+
+# Zone File Configuration
+timeto_live: 3600
+serial_number: "{{ ansible_facts['date_time']['epoch'] }}"
+refresh_time: 3600
+retry_time: 600
+expire_time: 86400
+negative_cache_time: 300
+zone_files_directory: "/etc/bind/zones"
+zone_directory_mode: "0750"
+zone_file_owner: root
+zone_file_group: bind
+zone_file_mode: "0640"
 
 # DHCP
+dhcp_server_packages:
+  - kea-dhcp4-server
+dhcp_service_name: "kea-dhcp4-server"
+dhcp_config_dir: "/etc/kea"
+dhcp_config_path: "/etc/kea/kea-dhcp4.conf"
+dhcp_config_dir_mode: "0755"
+dhcp_subnet_id: 1
 dhcp_range_start: "172.16.218.100"
-dhcp_range_end:   "172.16.218.200"
-dhcp_lease_time:  "86400"
+dhcp_range_end: "172.16.218.200"
+dhcp_lease_time: "86400"
+dhcp_renew_timer: 43200
+dhcp_rebind_timer: 75600
+dhcp_valid_lifetime: "{{ dhcp_lease_time }}"
+dhcp_dns_servers:
+  - "{{ server_ip }}"
 
 # Web
+web_packages:
+  - apache2
+web_service_name: "apache2"
+web_package_state: present
+web_update_cache: yes
 web_root: "/var/www/html"
+web_index_path: "{{ web_root }}/index.html"
+web_server_admin: "admin@{{ domain_name }}"
 
 # Mail
-mail_domain: "skill.net"
+mail_domain: "{{ domain_name }}"
 
 # LDAP
-ldap_base_dn: "dc=skill,dc=net"
-ldap_admin_dn: "cn=admin,dc=skill,dc=net"
-ldap_admin_pass: "Admin1234"
+ldap_base_dn: "dc=latihan,dc=home,dc=arpa"
+ldap_admin_dn: "cn=admin,dc=latihan,dc=home,dc=arpa"
+ldap_admin_pass: "CHANGE_ME"
 
 # NFS
 nfs_export_path: "/srv/nfs"
@@ -37,4 +117,77 @@ nfs_allowed_network: "172.16.218.0/24"
 vpn_port: 1194
 vpn_proto: "udp"
 vpn_network: "10.8.0.0"
-vpn_subnet:  "255.255.255.0"
+vpn_subnet: "255.255.255.0"
+
+# Interface
+iface_internal: "ens33"
+iface_external: "ens34"
+
+# Firewall
+firewall_packages:
+  - iptables
+  - iptables-persistent
+  - netfilter-persistent
+firewall_package_state: present
+firewall_update_cache: yes
+firewall_ip_forward_sysctl: "net.ipv4.ip_forward"
+firewall_ip_forward_value: "1"
+firewall_sysctl_set: yes
+firewall_sysctl_state: present
+firewall_sysctl_reload: yes
+firewall_trusted_cidr: "{{ trusted_subnet }}/24"
+firewall_flush: yes
+firewall_nat_table: "nat"
+firewall_filter_chains:
+  - INPUT
+  - FORWARD
+  - OUTPUT
+firewall_nat_chains:
+  - PREROUTING
+  - POSTROUTING
+firewall_input_chain: "INPUT"
+firewall_forward_chain: "FORWARD"
+firewall_output_chain: "OUTPUT"
+firewall_postrouting_chain: "POSTROUTING"
+firewall_input_policy: "DROP"
+firewall_forward_policy: "DROP"
+firewall_output_policy: "ACCEPT"
+firewall_chain_policies:
+  - chain: "{{ firewall_input_chain }}"
+    policy: "{{ firewall_input_policy }}"
+  - chain: "{{ firewall_forward_chain }}"
+    policy: "{{ firewall_forward_policy }}"
+  - chain: "{{ firewall_output_chain }}"
+    policy: "{{ firewall_output_policy }}"
+firewall_accept_jump: "ACCEPT"
+firewall_drop_log_jump: "LOG"
+firewall_masquerade_jump: "MASQUERADE"
+firewall_loopback_interface: "lo"
+firewall_established_states:
+  - ESTABLISHED
+  - RELATED
+firewall_icmp_protocol: "icmp"
+firewall_icmp_echo_type: "echo-request"
+firewall_tcp_protocol: "tcp"
+firewall_udp_protocol: "udp"
+firewall_dns_port: "53"
+firewall_dhcp_server_port: "67"
+firewall_web_ports:
+  - "80"
+  - "443"
+firewall_mail_ports:
+  - "25"
+  - "465"
+  - "587"
+  - "993"
+firewall_ldap_ports:
+  - "389"
+  - "636"
+firewall_nfs_ports:
+  - "111"
+  - "2049"
+firewall_log_limit: "5/min"
+firewall_input_log_prefix: "iptables-input-drop: "
+firewall_forward_log_prefix: "iptables-forward-drop: "
+firewall_log_level: "4"
+firewall_save_command: "netfilter-persistent save"

@@ -5,11 +5,19 @@
   gather_facts: true
 
   roles:
-    - firewall
-    - dns
-    - dhcp
-    - web
-    - ldap
-    - nfs
-    - mail
-    - vpn
+    - role: firewall
+      tags: firewall
+    - role: dns
+      tags: dns
+    - role: dhcp
+      tags: dhcp
+    - role: web
+      tags: web
+    - role: ldap
+      tags: ldap
+    - role: nfs
+      tags: nfs
+    - role: mail
+      tags: mail
+    - role: vpn
+      tags: vpn

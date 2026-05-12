@@ -92,7 +92,14 @@ dhcp_dns_servers:
   - "{{ server_ip }}"
 
 # Web
+web_packages:
+  - apache2
+web_service_name: "apache2"
+web_package_state: present
+web_update_cache: yes
 web_root: "/var/www/html"
+web_index_path: "{{ web_root }}/index.html"
+web_server_admin: "admin@{{ domain_name }}"
 
 # Mail
 mail_domain: "latihan.home.arpa"

@@ -1,0 +1,22 @@
+# Local inventory and environment-specific variables
+ansible/inventory.ini
+ansible/group_vars/all.yml
+
+# Ansible runtime artifacts
+*.retry
+.ansible/
+ansible.log
+
+# Secrets and vault material
+*.vault
+*.vault.yml
+vault.yml
+
+# Python/cache artifacts
+__pycache__/
+*.py[cod]
+
+# Editor/OS noise
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ domain_name }}</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f5f7fa;
+      color: #17202a;
+    }
+
+    main {
+      width: min(720px, calc(100% - 32px));
+      padding: 32px;
+      border: 1px solid #d7dde5;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(28px, 5vw, 44px);
+      line-height: 1.1;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 8px 16px;
+      margin: 24px 0 0;
+    }
+
+    dt {
+      font-weight: 700;
+    }
+
+    dd {
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>{{ domain_name }}</h1>
+    <p>Server web berhasil dikonfigurasi oleh Ansible.</p>
+    <dl>
+      <dt>Host</dt>
+      <dd>{{ inventory_hostname }}</dd>
+      <dt>IP Server</dt>
+      <dd>{{ server_ip }}</dd>
+      <dt>Document Root</dt>
+      <dd>{{ web_root }}</dd>
+    </dl>
+  </main>
+</body>
+</html>

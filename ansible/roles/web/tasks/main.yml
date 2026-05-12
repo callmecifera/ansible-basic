@@ -1,0 +1,38 @@
+---
+- name: Install web server packages
+  apt:
+    name: "{{ web_packages }}"
+    state: "{{ web_package_state }}"
+    update_cache: "{{ web_update_cache }}"
+  tags: web
+
+- name: Ensure web root exists
+  file:
+    path: "{{ web_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  tags: web
+
+- name: Configure default index page
+  template:
+    src: index.html.j2
+    dest: "{{ web_index_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Web Service
+  tags: web
+
+- name: Validate Apache configuration
+  command: apache2ctl configtest
+  changed_when: false
+  tags: web
+
+- name: Enable and start web service
+  service:
+    name: "{{ web_service_name }}"
+    enabled: true
+    state: started
+  tags: web
