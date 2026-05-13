@@ -1,0 +1,80 @@
+---
+- name: Test DNS forward record for domain
+  command: "dig @{{ server_ip }} {{ domain_name }} +short"
+  register: test_dns_domain
+  changed_when: false
+  failed_when: server_ip not in test_dns_domain.stdout_lines
+  tags: test
+
+- name: Test DNS forward record for www
+  command: "dig @{{ server_ip }} www.{{ domain_name }} +short"
+  register: test_dns_www
+  changed_when: false
+  failed_when: server_ip not in test_dns_www.stdout_lines
+  tags: test
+
+- name: Test DNS reverse record
+  command: "dig @{{ server_ip }} -x {{ server_ip }} +short"
+  register: test_dns_reverse
+  changed_when: false
+  failed_when: "'ns1.' ~ domain_name ~ '.' not in test_dns_reverse.stdout_lines"
+  tags: test
+
+- name: Test web server response
+  uri:
+    url: "http://{{ server_ip }}/"
+    return_content: false
+    status_code: 200
+  changed_when: false
+  tags: test
+
+- name: Test LDAP base DN is readable
+  command:
+    argv:
+      - ldapsearch
+      - -x
+      - -H
+      - ldap://127.0.0.1
+      - -b
+      - "{{ ldap_base_dn }}"
+      - -s
+      - base
+      - dn
+  changed_when: false
+  tags: test
+
+- name: Test NFS export is active
+  command: exportfs -v
+  register: test_nfs_exports
+  changed_when: false
+  failed_when: nfs_export_path not in test_nfs_exports.stdout
+  tags: test
+
+- name: Test Postfix configuration
+  command: postfix check
+  changed_when: false
+  tags: test
+
+- name: Test Dovecot service is active
+  command: systemctl is-active "{{ mail_dovecot_service_name }}"
+  changed_when: false
+  tags: test
+
+- name: Test OpenVPN service is active
+  command: systemctl is-active "{{ vpn_service_name }}"
+  changed_when: false
+  tags: test
+
+- name: Test OpenVPN client profile exists
+  stat:
+    path: "{{ vpn_client_config_dir }}/{{ vpn_client_name }}.ovpn"
+  register: test_vpn_client_profile
+  failed_when: not test_vpn_client_profile.stat.exists
+  tags: test
+
+- name: Test firewall saved rules include VPN NAT
+  command: iptables-save
+  register: test_firewall_rules
+  changed_when: false
+  failed_when: firewall_vpn_cidr not in test_firewall_rules.stdout
+  tags: test

@@ -21,3 +21,5 @@
       tags: mail
     - role: vpn
       tags: vpn
+    - role: test
+      tags: test

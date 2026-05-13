@@ -1,0 +1,22 @@
+---
+vpn_packages:
+  - openvpn
+  - easy-rsa
+vpn_service_name: "openvpn-server@server"
+vpn_config_dir: /etc/openvpn/server
+vpn_config_path: /etc/openvpn/server/server.conf
+vpn_easy_rsa_dir: /etc/openvpn/easy-rsa
+vpn_key_country: "ID"
+vpn_key_province: "Sulawesi Selatan"
+vpn_key_city: "Makassar"
+vpn_key_org: "Latihan LKS"
+vpn_key_email: "admin@{{ domain_name }}"
+vpn_key_ou: "Infrastructure"
+vpn_server_cn: "server"
+vpn_client_name: "client1"
+vpn_client_config_dir: /etc/openvpn/client-configs
+vpn_cidr: "{{ vpn_network }}/24"
+vpn_push_routes:
+  - "{{ network }} {{ subnet_mask }}"
+vpn_push_dns:
+  - "{{ server_ip }}"

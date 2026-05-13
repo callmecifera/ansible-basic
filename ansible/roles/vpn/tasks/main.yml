@@ -159,8 +159,25 @@
   no_log: true
   tags: vpn
 
-- name: Validate OpenVPN configuration
-  command: openvpn --config "{{ vpn_config_path }}" --test-crypto
+- name: Validate OpenVPN server configuration artifacts
+  stat:
+    path: "{{ item }}"
+  loop:
+    - "{{ vpn_config_path }}"
+    - "{{ vpn_config_dir }}/ca.crt"
+    - "{{ vpn_config_dir }}/server.crt"
+    - "{{ vpn_config_dir }}/server.key"
+    - "{{ vpn_config_dir }}/dh.pem"
+    - "{{ vpn_config_dir }}/ta.key"
+  register: vpn_server_artifacts
+  tags: vpn
+
+- name: Assert OpenVPN server configuration artifacts exist
+  assert:
+    that:
+      - vpn_server_artifacts.results | map(attribute='stat.exists') | min
+    fail_msg: "OpenVPN server config or certificate material is missing."
+    success_msg: "OpenVPN server config and certificate material are present."
   changed_when: false
   tags: vpn
 

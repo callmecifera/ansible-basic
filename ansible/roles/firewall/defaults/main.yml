@@ -1,0 +1,3 @@
+---
+firewall_vpn_interface: tun0
+firewall_vpn_cidr: "{{ vpn_cidr | default(vpn_network ~ '/24') }}"

@@ -36,6 +36,10 @@
     - Restart NFS Service
   tags: nfs
 
+- name: Apply NFS export configuration before continuing
+  meta: flush_handlers
+  tags: nfs
+
 - name: Enable and start NFS service
   service:
     name: "{{ nfs_service_name }}"
@@ -45,5 +49,7 @@
 
 - name: Validate exported NFS filesystems
   command: exportfs -v
+  register: nfs_active_exports
   changed_when: false
+  failed_when: nfs_export_path not in nfs_active_exports.stdout
   tags: nfs

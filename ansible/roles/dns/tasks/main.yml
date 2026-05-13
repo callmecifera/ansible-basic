@@ -85,3 +85,7 @@
       - "/etc/bind/zones/db.{{ flipped_ip }}.in-addr.arpa"
   changed_when: false
   tags: dns
+
+- name: Apply DNS configuration before continuing
+  meta: flush_handlers
+  tags: dns

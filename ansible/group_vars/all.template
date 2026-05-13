@@ -56,6 +56,10 @@ bind_transfers_in: 15
 bind_dnssec_validation: "auto"
 bind_version_string: "Not disclosed"
 bind_minimal_responses: "yes"
+bind_empty_zones_enable: false
+bind_disable_empty_zones:
+  - home.arpa
+  - 16.172.in-addr.arpa
 bind_acls:
   trusted:
     - "127.0.0.0/8"
@@ -124,6 +128,8 @@ mail_networks:
 ldap_packages:
   - slapd
   - ldap-utils
+ldap_debconf_packages:
+  - debconf-utils
 ldap_service_name: slapd
 ldap_organization: "Latihan LKS"
 ldap_base_dn: "dc=latihan,dc=home,dc=arpa"

@@ -1,0 +1,17 @@
+---
+mail_hostname: "mail.{{ mail_domain | default(domain_name) }}"
+mail_packages:
+  - postfix
+  - dovecot-core
+  - dovecot-imapd
+  - mailutils
+mail_postfix_service_name: postfix
+mail_dovecot_service_name: dovecot
+mail_postfix_config_path: /etc/postfix/main.cf
+mail_dovecot_mail_config_path: /etc/dovecot/conf.d/10-mail.conf
+mail_dovecot_auth_config_path: /etc/dovecot/conf.d/10-auth.conf
+mail_mailbox_command: ""
+mail_home_mailbox: "Maildir/"
+mail_networks:
+  - "127.0.0.0/8"
+  - "{{ trusted_subnet }}/24"

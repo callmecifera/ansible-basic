@@ -1,0 +1,8 @@
+---
+ldap_packages:
+  - slapd
+  - ldap-utils
+ldap_debconf_packages:
+  - debconf-utils
+ldap_service_name: slapd
+ldap_organization: "Latihan LKS"

@@ -1,0 +1,6 @@
+---
+nfs_packages:
+  - nfs-kernel-server
+nfs_service_name: nfs-kernel-server
+nfs_export_options: "rw,sync,no_subtree_check,no_root_squash"
+nfs_exports_path: /etc/exports.d/lks.exports

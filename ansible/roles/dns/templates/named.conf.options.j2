@@ -17,6 +17,10 @@ acl "{{ acl_name }}" {
 {% endif %}
 options {
     directory "{{ bind_directory | default('/var/cache/bind') }}";
+    empty-zones-enable {{ 'yes' if bind_empty_zones_enable | default(false) else 'no' }};
+{% for empty_zone in bind_disable_empty_zones | default([]) %}
+    disable-empty-zone "{{ empty_zone }}";
+{% endfor %}
 
 {% if bind_forwarders is defined and bind_forwarders %}
     // Upstream forwarders

@@ -1,4 +1,11 @@
 ---
+- name: Install LDAP debconf helper packages
+  apt:
+    name: "{{ ldap_debconf_packages }}"
+    state: present
+    update_cache: yes
+  tags: ldap
+
 - name: Preseed LDAP domain
   debconf:
     name: slapd
