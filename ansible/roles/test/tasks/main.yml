@@ -62,7 +62,9 @@
 
 - name: Test OpenVPN service is active
   command: systemctl is-active "{{ vpn_service_name }}"
+  register: test_vpn_service
   changed_when: false
+  failed_when: "'active' not in test_vpn_service.stdout"
   tags: test
 
 - name: Test OpenVPN client profile exists
