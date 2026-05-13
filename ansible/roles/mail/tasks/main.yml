@@ -1,0 +1,72 @@
+---
+- name: Preseed Postfix mailer type
+  debconf:
+    name: postfix
+    question: postfix/main_mailer_type
+    value: "Internet Site"
+    vtype: select
+  tags: mail
+
+- name: Preseed Postfix mail name
+  debconf:
+    name: postfix
+    question: postfix/mailname
+    value: "{{ mail_domain }}"
+    vtype: string
+  tags: mail
+
+- name: Install mail server packages
+  apt:
+    name: "{{ mail_packages }}"
+    state: present
+    update_cache: yes
+  tags: mail
+
+- name: Configure Postfix main.cf
+  template:
+    src: main.cf.j2
+    dest: "{{ mail_postfix_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Postfix Service
+  tags: mail
+
+- name: Configure Dovecot mail location
+  template:
+    src: 10-mail.conf.j2
+    dest: "{{ mail_dovecot_mail_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Dovecot Service
+  tags: mail
+
+- name: Configure Dovecot authentication
+  template:
+    src: 10-auth.conf.j2
+    dest: "{{ mail_dovecot_auth_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Dovecot Service
+  tags: mail
+
+- name: Validate Postfix configuration
+  command: postfix check
+  changed_when: false
+  tags: mail
+
+- name: Enable and start Postfix service
+  service:
+    name: "{{ mail_postfix_service_name }}"
+    enabled: true
+    state: started
+  tags: mail
+
+- name: Enable and start Dovecot service
+  service:
+    name: "{{ mail_dovecot_service_name }}"
+    enabled: true
+    state: started
+  tags: mail

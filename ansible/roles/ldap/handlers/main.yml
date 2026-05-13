@@ -1,0 +1,5 @@
+---
+- name: Restart LDAP Service
+  service:
+    name: "{{ ldap_service_name }}"
+    state: restarted

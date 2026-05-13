@@ -179,9 +179,45 @@ Setup Apache HTTP server:
 - Default index page untuk domain lokal
 - Validasi dengan `apache2ctl configtest`
 
-### `ldap`, `nfs`, `mail`, `vpn`
+### `ldap`
 
-Role ini sudah ada dalam struktur project dan `site.yml`, tetapi masih perlu implementasi task produksi/lab yang lengkap.
+Setup OpenLDAP untuk directory service lokal:
+
+- Package: `slapd`, `ldap-utils`
+- Preseed domain, organization, dan password admin LDAP
+- Enable service `slapd`
+- Validasi base DN dengan `ldapsearch`
+
+### `nfs`
+
+Setup NFS server untuk share LAN:
+
+- Package: `nfs-kernel-server`
+- Export default: `/srv/nfs`
+- Allow network: `172.16.218.0/24`
+- Config export di `/etc/exports.d/lks.exports`
+- Validasi export dengan `exportfs -v`
+
+### `mail`
+
+Setup mail server dasar untuk domain lokal:
+
+- Package: `postfix`, `dovecot-core`, `dovecot-imapd`, `mailutils`
+- Postfix mode `Internet Site`
+- Mailbox format: `Maildir`
+- Dovecot IMAP login memakai user system
+- Validasi Postfix dengan `postfix check`
+
+### `vpn`
+
+Setup OpenVPN server:
+
+- Package: `openvpn`, `easy-rsa`
+- Generate CA, sertifikat server, DH parameter, dan TLS auth key
+- Generate profil client default di `/etc/openvpn/client-configs/client1.ovpn`
+- Config server di `/etc/openvpn/server/server.conf`
+- Push route LAN dan DNS lokal ke client VPN
+- Enable service `openvpn-server@server`
 
 ## Variabel Penting
 
@@ -198,6 +234,11 @@ Role ini sudah ada dalam struktur project dan `site.yml`, tetapi masih perlu imp
 | `web_root` | `/var/www/html` | Apache document root |
 | `ldap_admin_pass` | `CHANGE_ME` | Password LDAP admin |
 | `vpn_port` | `1194` | Port OpenVPN |
+| `nfs_export_path` | `/srv/nfs` | Direktori share NFS |
+| `mail_hostname` | `mail.latihan.home.arpa` | Hostname mail server |
+| `vpn_network` | `10.8.0.0` | Network tunnel VPN |
+| `vpn_client_name` | `client1` | Nama profil client OpenVPN default |
+| `vpn_cidr` | `10.8.0.0/24` | CIDR client VPN untuk firewall/NAT |
 
 ## Troubleshooting
 

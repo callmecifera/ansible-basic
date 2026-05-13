@@ -1,0 +1,18 @@
+# {{ ansible_managed }}
+smtpd_banner = $myhostname ESMTP
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 3.6
+
+myhostname = {{ mail_hostname }}
+mydomain = {{ mail_domain }}
+myorigin = $mydomain
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+mynetworks = {{ mail_networks | join(', ') }}
+inet_interfaces = all
+inet_protocols = ipv4
+home_mailbox = {{ mail_home_mailbox }}
+mailbox_command = {{ mail_mailbox_command }}
+recipient_delimiter = +
+smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination

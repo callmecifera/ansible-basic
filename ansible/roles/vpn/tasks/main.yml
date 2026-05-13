@@ -1,0 +1,172 @@
+---
+- name: Install VPN packages
+  apt:
+    name: "{{ vpn_packages }}"
+    state: present
+    update_cache: yes
+  tags: vpn
+
+- name: Ensure OpenVPN server directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ vpn_config_dir }}"
+    - "{{ vpn_easy_rsa_dir }}"
+    - "{{ vpn_client_config_dir }}"
+    - /var/log/openvpn
+  tags: vpn
+
+- name: Copy Easy-RSA files into OpenVPN directory
+  command: "cp -a /usr/share/easy-rsa/. {{ vpn_easy_rsa_dir }}/"
+  args:
+    creates: "{{ vpn_easy_rsa_dir }}/easyrsa"
+  tags: vpn
+
+- name: Initialize Easy-RSA PKI
+  command: ./easyrsa init-pki
+  args:
+    chdir: "{{ vpn_easy_rsa_dir }}"
+    creates: "{{ vpn_easy_rsa_dir }}/pki"
+  tags: vpn
+
+- name: Build OpenVPN CA
+  command: ./easyrsa --batch build-ca nopass
+  args:
+    chdir: "{{ vpn_easy_rsa_dir }}"
+    creates: "{{ vpn_easy_rsa_dir }}/pki/ca.crt"
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "{{ domain_name }} CA"
+    EASYRSA_REQ_COUNTRY: "{{ vpn_key_country }}"
+    EASYRSA_REQ_PROVINCE: "{{ vpn_key_province }}"
+    EASYRSA_REQ_CITY: "{{ vpn_key_city }}"
+    EASYRSA_REQ_ORG: "{{ vpn_key_org }}"
+    EASYRSA_REQ_EMAIL: "{{ vpn_key_email }}"
+    EASYRSA_REQ_OU: "{{ vpn_key_ou }}"
+  tags: vpn
+
+- name: Generate OpenVPN server certificate request
+  command: "./easyrsa --batch gen-req {{ vpn_server_cn }} nopass"
+  args:
+    chdir: "{{ vpn_easy_rsa_dir }}"
+    creates: "{{ vpn_easy_rsa_dir }}/pki/reqs/{{ vpn_server_cn }}.req"
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "{{ vpn_server_cn }}"
+  tags: vpn
+
+- name: Sign OpenVPN server certificate
+  command: "./easyrsa --batch sign-req server {{ vpn_server_cn }}"
+  args:
+    chdir: "{{ vpn_easy_rsa_dir }}"
+    creates: "{{ vpn_easy_rsa_dir }}/pki/issued/{{ vpn_server_cn }}.crt"
+  environment:
+    EASYRSA_BATCH: "1"
+  tags: vpn
+
+- name: Generate OpenVPN client certificate request
+  command: "./easyrsa --batch gen-req {{ vpn_client_name }} nopass"
+  args:
+    chdir: "{{ vpn_easy_rsa_dir }}"
+    creates: "{{ vpn_easy_rsa_dir }}/pki/reqs/{{ vpn_client_name }}.req"
+  environment:
+    EASYRSA_BATCH: "1"
+    EASYRSA_REQ_CN: "{{ vpn_client_name }}"
+  tags: vpn
+
+- name: Sign OpenVPN client certificate
+  command: "./easyrsa --batch sign-req client {{ vpn_client_name }}"
+  args:
+    chdir: "{{ vpn_easy_rsa_dir }}"
+    creates: "{{ vpn_easy_rsa_dir }}/pki/issued/{{ vpn_client_name }}.crt"
+  environment:
+    EASYRSA_BATCH: "1"
+  tags: vpn
+
+- name: Generate Diffie-Hellman parameters
+  command: ./easyrsa gen-dh
+  args:
+    chdir: "{{ vpn_easy_rsa_dir }}"
+    creates: "{{ vpn_easy_rsa_dir }}/pki/dh.pem"
+  tags: vpn
+
+- name: Generate OpenVPN TLS auth key
+  command: openvpn --genkey secret "{{ vpn_easy_rsa_dir }}/pki/ta.key"
+  args:
+    creates: "{{ vpn_easy_rsa_dir }}/pki/ta.key"
+  tags: vpn
+
+- name: Install OpenVPN certificate files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - src: "{{ vpn_easy_rsa_dir }}/pki/ca.crt"
+      dest: "{{ vpn_config_dir }}/ca.crt"
+      mode: "0644"
+    - src: "{{ vpn_easy_rsa_dir }}/pki/issued/{{ vpn_server_cn }}.crt"
+      dest: "{{ vpn_config_dir }}/server.crt"
+      mode: "0644"
+    - src: "{{ vpn_easy_rsa_dir }}/pki/private/{{ vpn_server_cn }}.key"
+      dest: "{{ vpn_config_dir }}/server.key"
+      mode: "0600"
+    - src: "{{ vpn_easy_rsa_dir }}/pki/dh.pem"
+      dest: "{{ vpn_config_dir }}/dh.pem"
+      mode: "0644"
+    - src: "{{ vpn_easy_rsa_dir }}/pki/ta.key"
+      dest: "{{ vpn_config_dir }}/ta.key"
+      mode: "0600"
+  notify: Restart VPN Service
+  tags: vpn
+
+- name: Configure OpenVPN server
+  template:
+    src: server.conf.j2
+    dest: "{{ vpn_config_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart VPN Service
+  tags: vpn
+
+- name: Read OpenVPN client profile material
+  slurp:
+    src: "{{ item }}"
+  loop:
+    - "{{ vpn_easy_rsa_dir }}/pki/ca.crt"
+    - "{{ vpn_easy_rsa_dir }}/pki/issued/{{ vpn_client_name }}.crt"
+    - "{{ vpn_easy_rsa_dir }}/pki/private/{{ vpn_client_name }}.key"
+    - "{{ vpn_easy_rsa_dir }}/pki/ta.key"
+  register: vpn_client_material
+  no_log: true
+  tags: vpn
+
+- name: Configure OpenVPN client profile
+  template:
+    src: client.ovpn.j2
+    dest: "{{ vpn_client_config_dir }}/{{ vpn_client_name }}.ovpn"
+    owner: root
+    group: root
+    mode: "0600"
+  no_log: true
+  tags: vpn
+
+- name: Validate OpenVPN configuration
+  command: openvpn --config "{{ vpn_config_path }}" --test-crypto
+  changed_when: false
+  tags: vpn
+
+- name: Enable and start VPN service
+  service:
+    name: "{{ vpn_service_name }}"
+    enabled: true
+    state: started
+  tags: vpn

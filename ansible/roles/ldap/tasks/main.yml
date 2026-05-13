@@ -1,0 +1,63 @@
+---
+- name: Preseed LDAP domain
+  debconf:
+    name: slapd
+    question: slapd/domain
+    value: "{{ domain_name }}"
+    vtype: string
+  tags: ldap
+
+- name: Preseed LDAP organization
+  debconf:
+    name: slapd
+    question: shared/organization
+    value: "{{ ldap_organization }}"
+    vtype: string
+  tags: ldap
+
+- name: Preseed LDAP admin password
+  debconf:
+    name: slapd
+    question: slapd/password1
+    value: "{{ ldap_admin_pass }}"
+    vtype: password
+  no_log: true
+  tags: ldap
+
+- name: Confirm LDAP admin password
+  debconf:
+    name: slapd
+    question: slapd/password2
+    value: "{{ ldap_admin_pass }}"
+    vtype: password
+  no_log: true
+  tags: ldap
+
+- name: Install LDAP server packages
+  apt:
+    name: "{{ ldap_packages }}"
+    state: present
+    update_cache: yes
+  tags: ldap
+
+- name: Enable and start LDAP service
+  service:
+    name: "{{ ldap_service_name }}"
+    enabled: true
+    state: started
+  tags: ldap
+
+- name: Validate LDAP base DN
+  command:
+    argv:
+      - ldapsearch
+      - -x
+      - -H
+      - ldap://127.0.0.1
+      - -b
+      - "{{ ldap_base_dn }}"
+      - -s
+      - base
+      - dn
+  changed_when: false
+  tags: ldap

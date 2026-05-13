@@ -1,0 +1,33 @@
+# {{ ansible_managed }}
+port {{ vpn_port }}
+proto {{ vpn_proto }}
+dev tun
+
+ca {{ vpn_config_dir }}/ca.crt
+cert {{ vpn_config_dir }}/server.crt
+key {{ vpn_config_dir }}/server.key
+dh {{ vpn_config_dir }}/dh.pem
+tls-auth {{ vpn_config_dir }}/ta.key 0
+
+server {{ vpn_network }} {{ vpn_subnet }}
+topology subnet
+ifconfig-pool-persist /var/log/openvpn/ipp.txt
+
+{% for route in vpn_push_routes %}
+push "route {{ route }}"
+{% endfor %}
+{% for dns_server in vpn_push_dns %}
+push "dhcp-option DNS {{ dns_server }}"
+{% endfor %}
+push "dhcp-option DOMAIN {{ domain_name }}"
+
+keepalive 10 120
+cipher AES-256-GCM
+auth SHA256
+user nobody
+group nogroup
+persist-key
+persist-tun
+status /var/log/openvpn/status.log
+verb 3
+explicit-exit-notify 1

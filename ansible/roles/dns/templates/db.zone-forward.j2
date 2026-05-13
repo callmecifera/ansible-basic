@@ -7,6 +7,7 @@ $TTL    {{ timeto_live }}
             {{ negative_cache_time }} )  ; Negative Cache TTL
 
 @       IN  NS  ns1.{{ domain_name }}.
+@       IN  MX  10 mail.{{ domain_name }}.
 ns1     IN  A   {{ server_ip }}
 @       IN  A   {{ server_ip }}
 www     IN  A   {{ server_ip }}

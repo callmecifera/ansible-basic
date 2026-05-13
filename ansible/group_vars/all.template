@@ -103,21 +103,68 @@ web_server_admin: "admin@{{ domain_name }}"
 
 # Mail
 mail_domain: "{{ domain_name }}"
+mail_hostname: "mail.{{ domain_name }}"
+mail_packages:
+  - postfix
+  - dovecot-core
+  - dovecot-imapd
+  - mailutils
+mail_postfix_service_name: postfix
+mail_dovecot_service_name: dovecot
+mail_postfix_config_path: /etc/postfix/main.cf
+mail_dovecot_mail_config_path: /etc/dovecot/conf.d/10-mail.conf
+mail_dovecot_auth_config_path: /etc/dovecot/conf.d/10-auth.conf
+mail_mailbox_command: ""
+mail_home_mailbox: "Maildir/"
+mail_networks:
+  - "127.0.0.0/8"
+  - "{{ trusted_subnet }}/24"
 
 # LDAP
+ldap_packages:
+  - slapd
+  - ldap-utils
+ldap_service_name: slapd
+ldap_organization: "Latihan LKS"
 ldap_base_dn: "dc=latihan,dc=home,dc=arpa"
 ldap_admin_dn: "cn=admin,dc=latihan,dc=home,dc=arpa"
 ldap_admin_pass: "CHANGE_ME"
 
 # NFS
+nfs_packages:
+  - nfs-kernel-server
+nfs_service_name: nfs-kernel-server
 nfs_export_path: "/srv/nfs"
 nfs_allowed_network: "172.16.218.0/24"
+nfs_export_options: "rw,sync,no_subtree_check,no_root_squash"
+nfs_exports_path: /etc/exports.d/lks.exports
 
 # VPN
+vpn_packages:
+  - openvpn
+  - easy-rsa
+vpn_service_name: "openvpn-server@server"
+vpn_config_dir: /etc/openvpn/server
+vpn_config_path: /etc/openvpn/server/server.conf
+vpn_easy_rsa_dir: /etc/openvpn/easy-rsa
+vpn_key_country: "ID"
+vpn_key_province: "Sulawesi Selatan"
+vpn_key_city: "Makassar"
+vpn_key_org: "Latihan LKS"
+vpn_key_email: "admin@{{ domain_name }}"
+vpn_key_ou: "Infrastructure"
+vpn_server_cn: "server"
+vpn_client_name: "client1"
+vpn_client_config_dir: /etc/openvpn/client-configs
 vpn_port: 1194
 vpn_proto: "udp"
 vpn_network: "10.8.0.0"
 vpn_subnet: "255.255.255.0"
+vpn_cidr: "10.8.0.0/24"
+vpn_push_routes:
+  - "{{ network }} {{ subnet_mask }}"
+vpn_push_dns:
+  - "{{ server_ip }}"
 
 # Interface
 iface_internal: "ens33"
@@ -177,6 +224,7 @@ firewall_web_ports:
   - "443"
 firewall_mail_ports:
   - "25"
+  - "143"
   - "465"
   - "587"
   - "993"
@@ -191,3 +239,5 @@ firewall_input_log_prefix: "iptables-input-drop: "
 firewall_forward_log_prefix: "iptables-forward-drop: "
 firewall_log_level: "4"
 firewall_save_command: "netfilter-persistent save"
+firewall_vpn_interface: tun0
+firewall_vpn_cidr: "{{ vpn_cidr }}"

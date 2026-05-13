@@ -139,12 +139,36 @@
     source: "{{ firewall_trusted_cidr }}"
     jump: "{{ firewall_accept_jump }}"
 
+- name: Allow VPN clients to reach internal network
+  iptables:
+    chain: "{{ firewall_forward_chain }}"
+    in_interface: "{{ firewall_vpn_interface }}"
+    out_interface: "{{ iface_internal }}"
+    source: "{{ firewall_vpn_cidr }}"
+    jump: "{{ firewall_accept_jump }}"
+
+- name: Allow VPN clients to forward out
+  iptables:
+    chain: "{{ firewall_forward_chain }}"
+    in_interface: "{{ firewall_vpn_interface }}"
+    out_interface: "{{ iface_external }}"
+    source: "{{ firewall_vpn_cidr }}"
+    jump: "{{ firewall_accept_jump }}"
+
 - name: Masquerade internal network on external interface
   iptables:
     table: "{{ firewall_nat_table }}"
     chain: "{{ firewall_postrouting_chain }}"
     out_interface: "{{ iface_external }}"
     source: "{{ firewall_trusted_cidr }}"
+    jump: "{{ firewall_masquerade_jump }}"
+
+- name: Masquerade VPN network on external interface
+  iptables:
+    table: "{{ firewall_nat_table }}"
+    chain: "{{ firewall_postrouting_chain }}"
+    out_interface: "{{ iface_external }}"
+    source: "{{ firewall_vpn_cidr }}"
     jump: "{{ firewall_masquerade_jump }}"
 
 - name: Log dropped input packets
