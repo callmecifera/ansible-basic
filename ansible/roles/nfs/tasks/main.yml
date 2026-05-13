@@ -47,6 +47,11 @@
     state: started
   tags: nfs
 
+- name: Reload NFS exports (ensure active)
+  command: exportfs -ra
+  changed_when: false
+  tags: nfs
+
 - name: Validate exported NFS filesystems
   command: exportfs -v
   register: nfs_active_exports
